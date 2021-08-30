@@ -1,4 +1,7 @@
-﻿using CodingPracticalTest.Model.Request;
+﻿using CodingPracticalTest.Model;
+using CodingPracticalTest.Model.Request;
+using CodingPracticalTest.Services.Contract;
+using CodingPracticalTest.Services.Implementation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -16,39 +19,66 @@ namespace CodingPracticalTest.Controllers
     public class DomainTraceController : ApiControllerBase
     {
         private readonly ILogger<DomainTraceController> logger;
-        public DomainTraceController(ILogger<DomainTraceController> logger)
+        private readonly IEnumerable<IDomainDetailService> services;
+        public DomainTraceController(ILogger<DomainTraceController> logger, IEnumerable<IDomainDetailService> services)
         {
             this.logger = logger;
+            this.services = services;
         }
 
         [HttpPost, Route("")]
-        public async Task<IActionResult> Index([FromBody] IEnumerable<RequestModel> model)
+        public async Task<IActionResult> Index([FromBody] RequestModel model)
         {
             try
-            {  
-                if (model.Count() > 0)
+            {
+                if (IsValidDomainName(model.Address))
                 {
-                    List<Task<string>> allTasks = new List<Task<string>>();
-                    HttpClient client = new HttpClient();
-                    foreach (var item in model)
+                    if(model.Services == null || model.Services.Count == 0)
                     {
-                        if (ModelState.IsValid)
-                        {
-                            var task = client.GetStringAsync(item.Address);
-                            allTasks.Add(task);
-                        }                      
+                        model.Services = new List<string> { Constants.GeoIp, Constants.RDAP };
+                        //
                     }
-                    
-                    string[] result = await Task.WhenAll(allTasks);
+
+                    var allTasks = new List<Task<DomainDetail>>();
+                    foreach (var service in model.Services)
+                    {
+                        var task = GetService(service).GetDetails(model.Address);
+                        allTasks.Add(task);
+                    }
+
+                    var result = await Task.WhenAll(allTasks);
                     return Ok(result);
                 }
-                return BadRequest("At least one address should provide");
+                return BadRequest("Invalid Domain Name or Ip Address");
             }
             catch (Exception ex)
             {
                 logger.LogError(ex.Message, ex);
                 return StatusCode(500, "Internal server error : Please contact api administrator");
             }            
-        }       
+        }
+
+        private IDomainDetailService GetService(string service)
+        {
+            if(service.Equals(Constants.GeoIp ,StringComparison.OrdinalIgnoreCase))
+            {
+                return services.First(x => x.GetType() == typeof(GeoIpDomainDetailService));
+            }
+            else if (service.Equals(Constants.RDAP, StringComparison.OrdinalIgnoreCase))
+            {
+                return services.First(x => x.GetType() == typeof(RdapDomainDetailService));
+            }
+            //else if (service.Equals(Constants.ReverseDNS, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    return services.First(x => x.GetType() == typeof(ReverseDNSDetailService));
+            //}
+            throw new Exception("Invalid Service Name");
+        }
+
+
+        private bool IsValidDomainName(string name)
+        {
+            return Uri.CheckHostName(name) != UriHostNameType.Unknown;
+        }
     }
 }

@@ -1,3 +1,6 @@
+using AspNetCoreRateLimit;
+using CodingPracticalTest.Services.Contract;
+using CodingPracticalTest.Services.Implementation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -26,11 +29,23 @@ namespace CodingPracticalTest
         public void ConfigureServices(IServiceCollection services)
         {
 
+            
+            services.AddOptions();           
+            services.AddMemoryCache();
+            services.Configure<IpRateLimitOptions>(Configuration.GetSection("IpRateLimiting"));
+           // services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
+            services.AddInMemoryRateLimiting();
+
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CodingPracticalTest", Version = "v1" });
             });
+            services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
+            services.AddTransient<IDomainDetailService, GeoIpDomainDetailService>();
+            services.AddTransient<IDomainDetailService, RdapDomainDetailService>();
+            services.AddTransient<IDomainDetailService, ReverseDNSDetailService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,7 +60,7 @@ namespace CodingPracticalTest
             }
 
             app.UseRouting();
-
+            app.UseIpRateLimiting();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
