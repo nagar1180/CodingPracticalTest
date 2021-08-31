@@ -33,7 +33,7 @@ namespace CodingPracticalTest
             services.AddOptions();           
             services.AddMemoryCache();
             services.Configure<IpRateLimitOptions>(Configuration.GetSection("IpRateLimiting"));
-           // services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
+           //services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
             services.AddInMemoryRateLimiting();
 
             services.AddControllers();

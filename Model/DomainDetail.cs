@@ -8,5 +8,6 @@ namespace CodingPracticalTest.Model
         public string Address { get; set; }
         public string Country { get; set; }
         public string Region { get; set; }
+        public string ErrorMessage { get; set; }
     }
 }

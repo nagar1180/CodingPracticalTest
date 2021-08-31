@@ -35,8 +35,7 @@ namespace CodingPracticalTest.Controllers
                 {
                     if(model.Services == null || model.Services.Count == 0)
                     {
-                        model.Services = new List<string> { Constants.GeoIp, Constants.RDAP };
-                        //
+                        model.Services = new List<string> { Constants.GeoIp, Constants.RDAP, Constants.ReverseDNS };                        
                     }
 
                     var allTasks = new List<Task<DomainDetail>>();
@@ -68,10 +67,10 @@ namespace CodingPracticalTest.Controllers
             {
                 return services.First(x => x.GetType() == typeof(RdapDomainDetailService));
             }
-            //else if (service.Equals(Constants.ReverseDNS, StringComparison.OrdinalIgnoreCase))
-            //{
-            //    return services.First(x => x.GetType() == typeof(ReverseDNSDetailService));
-            //}
+            else if (service.Equals(Constants.ReverseDNS, StringComparison.OrdinalIgnoreCase))
+            {
+                return services.First(x => x.GetType() == typeof(ReverseDNSDetailService));
+            }
             throw new Exception("Invalid Service Name");
         }
 
